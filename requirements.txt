@@ -1,0 +1,24 @@
+# Web
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+jinja2>=3.1.0
+python-multipart>=0.0.12
+pydantic-settings>=2.6.0
+
+# Images / color
+pillow>=10.0.0
+pillow-avif-plugin>=1.4.3
+numpy>=1.26.0,<2.0.0
+opencv-python-headless>=4.8.0
+colorspacious>=1.1.0
+scipy>=1.10.0,<1.14.0
+scikit-image>=0.22.0,<0.24.0
+
+# ML (install PyTorch with CUDA from https://pytorch.org — match your driver)
+torch>=2.2.0
+torchvision>=0.17.0
+
+basicsr>=1.4.2
+realesrgan>=0.3.0
+gfpgan>=1.3.8
+facexlib>=0.3.0

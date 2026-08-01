@@ -1,0 +1,4 @@
+cd "d:\Image Processing Project\ColorBLind"
+pip install -r requirements.txt
+python scripts/download_weights.py
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000

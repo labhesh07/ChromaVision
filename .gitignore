@@ -1,0 +1,31 @@
+__pycache__/
+*.py[cod]
+.Python
+.venv/
+venv/
+env/
+.idea/
+.vscode/
+*.log
+.env
+
+# Ignore all model weights
+weights/*
+deoldify.onnx
+*.onnx
+*.pth
+*.caffemodel
+*.npy
+
+# Ignore media and generated files in the root folder only
+/*.png
+/*.jpg
+/*.jpeg
+/*.webp
+/*.avif
+/*.pdf
+/*.docx
+/*.zip
+/*.tar.gz
+dist/
+node_modules/

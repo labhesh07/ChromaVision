@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ColorBLind — Image tools</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <h1>ColorBLind</h1>
+    <p class="tagline">Color vision tools, photo restoration, and upscaling</p>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button type="button" class="tab active" data-tab="cvd" role="tab" aria-selected="true">Color blind</button>
+    <button type="button" class="tab" data-tab="colorize" role="tab" aria-selected="false">Colorize Pro</button>
+    <button type="button" class="tab" data-tab="restore" role="tab" aria-selected="false">Old photo restore</button>
+    <button type="button" class="tab" data-tab="upscale" role="tab" aria-selected="false">Upscale</button>
+    <button type="button" class="tab" data-tab="advupscale" role="tab" aria-selected="false">Advanced Upscale Pro</button>
+  </nav>
+
+  <main>
+    <section id="panel-cvd" class="panel active" role="tabpanel">
+      <p class="hint">Simulate how an image may appear with CVD, or daltonize to boost separability for a chosen deficiency.</p>
+      <form id="form-cvd" class="tool-form" enctype="multipart/form-data">
+        <div class="drop-zone" data-file-input="cvd-file">
+          <p class="drop-title">Image (max {{ max_upload_mb }} MB)</p>
+          <p class="drop-hint">Drag and drop image here, or choose file</p>
+          <p id="cvd-file-name" class="file-name">No file selected</p>
+          <button type="button" class="btn secondary pick-btn">Choose image</button>
+          <input id="cvd-file" type="file" name="file" accept="image/jpeg,image/png,image/webp" required />
+        </div>
+        <label>
+          Mode
+          <select name="mode">
+            <option value="simulate">Simulate CVD</option>
+            <option value="daltonize">Daltonize</option>
+          </select>
+        </label>
+        <label>
+          Deficiency
+          <select name="cvd_type">
+            <option value="protanopia">Protanopia (red cone absent)</option>
+            <option value="deuteranopia" selected>Deuteranopia (green cone absent)</option>
+            <option value="tritanopia">Tritanopia (blue cone absent)</option>
+            <option value="protanomaly">Protanomaly (red cone shifted)</option>
+            <option value="deuteranomaly">Deuteranomaly (green cone shifted)</option>
+            <option value="tritanomaly">Tritanomaly (blue cone shifted)</option>
+          </select>
+        </label>
+        <p class="note">Red-green: protan/deutan. Blue-yellow: tritan. \"-opia\" = cone absent, \"-anomaly\" = cone shifted.</p>
+        <label>
+          Severity (0 = off, 1 = full) <span class="range-val" id="sev-val">1</span>
+          <input type="range" name="severity" min="0" max="1" step="0.05" value="1" id="severity" />
+        </label>
+        <label>
+          Daltonize strength <span class="range-val" id="str-val">1</span>
+          <input type="range" name="strength" min="0" max="3" step="0.1" value="1" id="strength" />
+        </label>
+        <button type="submit" class="btn primary">Process</button>
+      </form>
+      <p class="note">Daltonize strength applies when mode is Daltonize.</p>
+      <div class="cvd-wow-actions">
+        <button id="btn-cvd-grid" type="button" class="btn secondary">Generate 3x3 CVD Grid</button>
+        <button id="btn-palette-safety" type="button" class="btn secondary">Analyze Palette Safety</button>
+      </div>
+      <section id="cvd-insights" class="insights-wrap hidden">
+        <h3>CVD Insights</h3>
+        <figure id="cvd-grid-wrap" class="hidden">
+          <figcaption>Original + 8 simulations (3x3)</figcaption>
+          <img id="cvd-grid-img" alt="CVD grid preview" />
+          <a id="cvd-grid-download" class="btn download hidden" download="cvd-grid.png">Download grid</a>
+        </figure>
+        <div id="palette-wrap" class="hidden">
+          <h4>Palette Safety Rating</h4>
+          <p class="note">Metric: CIEDE2000 DeltaE (perceptual). Lower value means colors are harder to distinguish.</p>
+          <p class="note">Risk legend: <span class="risk-bad">Risky</span> (&lt;10), <span class="risk-warn">Warning</span> (10-20), <span class="risk-good">Safe</span> (&ge;20).</p>
+          <p id="palette-summary" class="note"></p>
+          <div id="palette-colors" class="palette-colors"></div>
+          <div class="table-wrap">
+            <table id="palette-table">
+              <thead>
+                <tr>
+                  <th>Pair</th>
+                  <th>Base ΔE</th>
+                  <th>Protanopia</th>
+                  <th>Deuteranopia</th>
+                  <th>Tritanopia</th>
+                  <th>Protanomaly</th>
+                  <th>Deuteranomaly</th>
+                  <th>Tritanomaly</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section id="panel-colorize" class="panel" role="tabpanel" hidden>
+      <p class="hint">High-quality old/grayscale colorization with primary model + fallback model, and optional post-enhancement chain.</p>
+      <form id="form-colorize" class="tool-form" enctype="multipart/form-data">
+        <div class="drop-zone" data-file-input="colorize-file">
+          <p class="drop-title">Image (max {{ max_upload_mb }} MB)</p>
+          <p class="drop-hint">Drag and drop image here, or choose file</p>
+          <p id="colorize-file-name" class="file-name">No file selected</p>
+          <button type="button" class="btn secondary pick-btn">Choose image</button>
+          <input id="colorize-file" type="file" name="file" accept="image/jpeg,image/png,image/webp" required />
+        </div>
+        <button type="submit" class="btn primary">Colorize</button>
+      </form>
+      <p class="note">This is a separate feature and does not overwrite outputs from other tabs.</p>
+    </section>
+
+    <section id="panel-restore" class="panel" role="tabpanel" hidden>
+      <p class="hint">Best for portraits with visible faces. Backgrounds are enhanced with the same upscaler as the Upscale tab. Heavy scratches need inpainting models beyond this demo.</p>
+      <form id="form-restore" class="tool-form" enctype="multipart/form-data">
+        <div class="drop-zone" data-file-input="restore-file">
+          <p class="drop-title">Image (max {{ max_upload_mb }} MB)</p>
+          <p class="drop-hint">Drag and drop image here, or choose file</p>
+          <p id="restore-file-name" class="file-name">No file selected</p>
+          <button type="button" class="btn secondary pick-btn">Choose image</button>
+          <input id="restore-file" type="file" name="file" accept="image/jpeg,image/png,image/webp" required />
+        </div>
+        <button type="submit" class="btn primary">Restore</button>
+      </form>
+    </section>
+
+    <section id="panel-upscale" class="panel" role="tabpanel" hidden>
+      <p class="hint">Real-ESRGAN general x4. First run requires downloaded weights (see <code>.env.example</code>).</p>
+      <form id="form-upscale" class="tool-form" enctype="multipart/form-data">
+        <div class="drop-zone" data-file-input="upscale-file">
+          <p class="drop-title">Image (max {{ max_upload_mb }} MB)</p>
+          <p class="drop-hint">Drag and drop image here, or choose file</p>
+          <p id="upscale-file-name" class="file-name">No file selected</p>
+          <button type="button" class="btn secondary pick-btn">Choose image</button>
+          <input id="upscale-file" type="file" name="file" accept="image/jpeg,image/png,image/webp" required />
+        </div>
+        <button type="submit" class="btn primary">Upscale</button>
+      </form>
+    </section>
+
+    <section id="panel-advupscale" class="panel" role="tabpanel" hidden>
+      <p class="hint">Pro pipeline: RealESRGAN_x4plus (RRDBNet) + denoise pre-scrub + tiled enhancement + aligned 10x face/background upscale.</p>
+      <form id="form-adv-upscale" class="tool-form" enctype="multipart/form-data">
+        <div class="drop-zone" data-file-input="adv-upscale-file">
+          <p class="drop-title">Image (max {{ max_upload_mb }} MB)</p>
+          <p class="drop-hint">Drag and drop image here, or choose file</p>
+          <p id="adv-upscale-file-name" class="file-name">No file selected</p>
+          <button type="button" class="btn secondary pick-btn">Choose image</button>
+          <input id="adv-upscale-file" type="file" name="file" accept="image/jpeg,image/png,image/webp" required />
+        </div>
+        <button type="submit" class="btn primary">Advanced Upscale</button>
+      </form>
+    </section>
+
+    <div id="loading" class="loading hidden" aria-live="polite">
+      <span class="spinner" aria-hidden="true"></span>
+      <span class="loading-text">Processing…</span>
+    </div>
+
+    <div id="error" class="error hidden" role="alert"></div>
+
+    <figure id="result-wrap" class="result-wrap hidden">
+      <figcaption>Result</figcaption>
+      <p id="result-meta" class="result-meta"></p>
+      <p id="result-quality" class="result-quality hidden"></p>
+      <div id="pipeline-wrap" class="pipeline-wrap hidden">
+        <h4>Processing Pipeline</h4>
+        <ol id="pipeline-steps"></ol>
+      </div>
+      <div id="compare-wrap" class="compare-wrap hidden">
+        <div class="compare-stage">
+          <img id="before-img" alt="Original image preview" />
+          <div id="after-clip" class="after-clip">
+            <img id="after-img" alt="Processed image preview" />
+          </div>
+          <div id="compare-divider" class="compare-divider"></div>
+        </div>
+        <label class="compare-label">
+          Compare before/after
+          <input id="compare-range" type="range" min="0" max="100" value="50" />
+        </label>
+      </div>
+      <img id="result-img" class="hidden" alt="Result preview" />
+      <a id="download-link" class="btn download hidden" download="processed.png">Download result</a>
+    </figure>
+
+    <section id="hist-wrap" class="hist-wrap hidden">
+      <h3>Color Histogram Analysis</h3>
+      <p class="hist-caption">Input vs output distribution per channel (R/G/B).</p>
+      <div class="hist-controls">
+        <label><input id="hist-r" type="checkbox" checked /> R</label>
+        <label><input id="hist-g" type="checkbox" checked /> G</label>
+        <label><input id="hist-b" type="checkbox" checked /> B</label>
+        <label>
+          View
+          <select id="hist-view">
+            <option value="inout">Input + Output</option>
+            <option value="diff">Difference (Output - Input)</option>
+          </select>
+        </label>
+      </div>
+      <div class="hist-grid">
+        <div class="hist-card">
+          <h4>Input histogram</h4>
+          <canvas id="hist-input" width="700" height="250" aria-label="Input RGB histogram"></canvas>
+        </div>
+        <div class="hist-card">
+          <h4>Output histogram</h4>
+          <canvas id="hist-output" width="700" height="250" aria-label="Output RGB histogram"></canvas>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <small>GPU recommended for restore and upscale. Place weights under <code>weights/</code>.</small>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
